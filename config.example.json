@@ -1,0 +1,15 @@
+{
+    "unsplash": {
+        "applicationId": "YOUR_APPLICATION_ID",
+        "accessKey": "YOUR_ACCESS_KEY_HERE",
+        "secretKey": "YOUR_SECRET_KEY_HERE"
+    },
+    "folders": {
+        "wallpapers": "C:\\Users\\YourUsername\\Pictures\\wallpapers"
+    },
+    "settings": {
+        "maxWallpapersPerFolder": 20,
+        "imageWidth": 3840,
+        "imageHeight": 2160
+    }
+}

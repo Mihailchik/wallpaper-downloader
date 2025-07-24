@@ -1,0 +1,19 @@
+# Personal files - do not commit
+history.json
+wallpaper_downloader.log
+config.json
+
+# Windows files
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs
+*.log
+
+# Personal wallpaper folders (if any test folders)
+wallpapers/
+test_wallpapers/
