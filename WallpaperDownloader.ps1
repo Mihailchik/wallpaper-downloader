@@ -150,6 +150,56 @@ function Save-WallpaperHistory {
     }
 }
 
+# Function to get random wallpapers from Pixabay (fallback)
+function Get-PixabayWallpapers {
+    param([int]$Count = 10)
+    
+    $wallpapers = @()
+    $errorCount = 0
+    
+    # Pixabay categories for better wallpapers
+    $categories = @("nature", "backgrounds", "places", "animals", "travel")
+    
+    try {
+        $category = $categories | Get-Random
+        $response = Invoke-RestMethod -Uri "https://pixabay.com/api/" -Method Get -Body @{
+            key = $Config.pixabay.apiKey
+            q = $category
+            image_type = "photo"
+            orientation = "horizontal"
+            category = $category
+            min_width = $Config.settings.imageWidth
+            min_height = $Config.settings.imageHeight
+            per_page = $Count
+            safesearch = "true"
+        }
+        
+        if ($response.hits.Count -gt 0) {
+            foreach ($hit in $response.hits) {
+                $wallpapers += [PSCustomObject]@{
+                    id = "pixabay_$($hit.id)"
+                    url = $hit.largeImageURL
+                    description = $hit.tags
+                    author = $hit.user
+                }
+            }
+        }
+        else {
+            Write-ErrorLog -ErrorCode "PIXABAY_ERROR" -Message "No images found in Pixabay"
+            $errorCount++
+        }
+    }
+    catch {
+        $errorCount++
+        Write-ErrorLog -ErrorCode "PIXABAY_ERROR" -Message "Pixabay API failed: $($_.Exception.Message)"
+    }
+    
+    return @{
+        wallpapers = $wallpapers
+        errorCount = $errorCount
+    }
+}
+
 # Function to get random wallpapers from Unsplash
 function Get-UnsplashWallpapers {
     param([int]$Count = 10)
@@ -175,7 +225,7 @@ function Get-UnsplashWallpapers {
                 author = $response.user.name
             }
             
-            Start-Sleep -Seconds 2  # Pause between API requests
+            Start-Sleep -Seconds 2
         }
         catch {
             $errorCount++
@@ -243,7 +293,35 @@ function Download-Wallpaper {
     }
 }
 
-# Function to remove old wallpapers
+# Function to force cleanup by file count (regardless of errors)
+function Force-CleanupByFileCount {
+    param([int]$MaxFiles = 30)
+    
+    try {
+        $allFiles = Get-ChildItem $WallpaperFolder -Filter "*.jpg" | Sort-Object LastWriteTime -Descending
+        
+        if ($allFiles.Count -gt $MaxFiles) {
+            $filesToDelete = $allFiles | Select-Object -Skip $MaxFiles
+            
+            foreach ($file in $filesToDelete) {
+                try {
+                    Remove-Item $file.FullName -Force
+                    Write-ErrorLog -ErrorCode "FORCE_CLEANUP" -Message "Force deleted old file: $($file.Name)"
+                }
+                catch {
+                    Write-ErrorLog -ErrorCode "FILE_ERROR" -Message "Failed to force delete $($file.Name): $($_.Exception.Message)"
+                }
+            }
+            
+            Write-ErrorLog -ErrorCode "FORCE_CLEANUP" -Message "Force cleanup: deleted $($filesToDelete.Count) files, kept $MaxFiles"
+        }
+    }
+    catch {
+        Write-ErrorLog -ErrorCode "FILE_ERROR" -Message "Error during force cleanup: $($_.Exception.Message)"
+    }
+}
+
+# Function to remove old wallpapers (history-based)
 function Remove-OldWallpapers {
     param([object]$History)
     
@@ -278,13 +356,22 @@ function Remove-OldWallpapers {
 function Start-WallpaperDownload {
     param([object]$History)
     
-    # Get wallpapers from Unsplash
+    # Try Unsplash first
     $result = Get-UnsplashWallpapers -Count $Count
     $wallpapers = $result.wallpapers
     $apiErrors = $result.errorCount
     
+    # If Unsplash failed or returned few results, try Pixabay fallback
+    if ($wallpapers.Count -lt ($Count / 2)) {
+        Write-ErrorLog -ErrorCode "FALLBACK" -Message "Unsplash returned only $($wallpapers.Count) wallpapers, trying Pixabay"
+        
+        $fallbackResult = Get-PixabayWallpapers -Count $Count
+        $wallpapers += $fallbackResult.wallpapers
+        $apiErrors += $fallbackResult.errorCount
+    }
+    
     if ($wallpapers.Count -eq 0) {
-        Write-ErrorLog -ErrorCode "API_ERROR" -Message "Failed to get any wallpapers from Unsplash"
+        Write-ErrorLog -ErrorCode "API_ERROR" -Message "Failed to get any wallpapers from both sources"
         return @{
             history = $History
             hasErrors = $true
@@ -342,8 +429,11 @@ try {
         Remove-OldWallpapers -History $result.history
     }
     elseif ($result.hasErrors) {
-        Write-ErrorLog -ErrorCode "PROCESS_ERROR" -Message "Errors occurred during download, skipping cleanup"
+        Write-ErrorLog -ErrorCode "PROCESS_ERROR" -Message "Errors occurred during download, skipping history cleanup"
     }
+    
+    # ALWAYS force cleanup by file count (regardless of errors)
+    Force-CleanupByFileCount -MaxFiles 30
     
     # Save history
     Save-WallpaperHistory -History $result.history
