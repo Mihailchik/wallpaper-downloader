@@ -5,18 +5,25 @@ PowerShell script for automatic wallpaper downloading from Unsplash API. Downloa
 ## Features
 
 - 🖼️ **High Quality**: Downloads 4K wallpapers (3840x2160)
-- 🔄 **Smart Management**: Keeps only latest 20 wallpapers, removes old ones
+- 🔄 **Smart Management**: Keeps maximum 30 wallpapers, removes old ones automatically
 - 🚫 **No Duplicates**: Tracks downloaded wallpapers to avoid duplicates
 - 🤫 **Silent Operation**: Runs quietly in background, logs only errors
 - 📅 **Scheduler Ready**: Perfect for Windows Task Scheduler automation
 - 🧹 **Auto Cleanup**: Removes old logs and history (7 days)
+- 🔄 **Dual API Support**: Uses Unsplash + Pixabay fallback for reliability
 
 ## Quick Start
 
-### 1. Get Unsplash API Key
+### 1. Get API Keys
+**Unsplash API (Primary):**
 1. Go to [Unsplash Developers](https://unsplash.com/developers)
 2. Create new application
 3. Get your Access Key
+
+**Pixabay API (Fallback):**
+1. Go to [Pixabay API](https://pixabay.com/api/docs/)
+2. Register and get your API key
+3. Optional but recommended for reliability
 
 ### 2. Setup Configuration
 1. Copy `config.example.json` to `config.json`
@@ -41,6 +48,9 @@ Edit `config.json`:
         "applicationId": "YOUR_APP_ID",
         "accessKey": "YOUR_ACCESS_KEY",
         "secretKey": "YOUR_SECRET_KEY"
+    },
+    "pixabay": {
+        "apiKey": "YOUR_PIXABAY_API_KEY"
     },
     "folders": {
         "wallpapers": "C:\\Users\\YourName\\Pictures\\wallpapers"
@@ -128,12 +138,13 @@ Edit `config.json`:
 - ⚠️ Partially downloaded file may be corrupted
 - 🔄 Next run will recover automatically
 
-## Error Handling
+## Error Handling & Reliability
 
-- Errors are logged to `wallpaper_downloader.log`
-- Script runs silently - no console output during normal operation
-- Old wallpapers are only deleted after successful new downloads
-- Automatic cleanup of old logs (7 days)
+- **Dual API Support**: Automatically switches to Pixabay if Unsplash rate limit exceeded
+- **Force Cleanup**: Maintains maximum 30 files regardless of API errors
+- **Silent Logging**: Errors logged to `wallpaper_downloader.log`, no console spam
+- **Smart Cleanup**: History-based cleanup + force cleanup by file count
+- **Auto Recovery**: Removes old logs and history (7 days)
 
 ## Project Structure
 

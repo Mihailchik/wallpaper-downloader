@@ -4,6 +4,9 @@
         "accessKey": "YOUR_ACCESS_KEY_HERE",
         "secretKey": "YOUR_SECRET_KEY_HERE"
     },
+    "pixabay": {
+        "apiKey": "YOUR_PIXABAY_API_KEY_HERE"
+    },
     "folders": {
         "wallpapers": "C:\\Users\\YourUsername\\Pictures\\wallpapers"
     },
