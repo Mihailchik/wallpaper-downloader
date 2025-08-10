@@ -218,9 +218,13 @@ function Get-UnsplashWallpapers {
                 h = $Config.settings.imageHeight
             }
             
+            # OLD METHOD: url = $response.urls.full
+            # NEW METHOD: RAW with size and fit=crop for better compression
+            $optimizedUrl = "$($response.urls.raw)&w=$($Config.settings.imageWidth)&h=$($Config.settings.imageHeight)&fit=crop"
+            
             $wallpapers += [PSCustomObject]@{
                 id = $response.id
-                url = $response.urls.full
+                url = $optimizedUrl
                 description = $response.description
                 author = $response.user.name
             }
