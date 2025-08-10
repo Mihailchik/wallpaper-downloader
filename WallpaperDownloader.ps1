@@ -382,7 +382,9 @@ function Start-WallpaperDownload {
     $downloadErrors = 0
     
     foreach ($wallpaper in $wallpapers) {
-        $fileName = "wallpaper_$($wallpaper.id)_$(Get-Date -Format 'yyyyMMdd_HHmmss').jpg"
+        # Determine service name from wallpaper ID
+        $serviceName = if ($wallpaper.id -like "pixabay_*") { "pixabay" } else { "unsplash" }
+        $fileName = "wallpaper_$($serviceName)_$($wallpaper.id)_$(Get-Date -Format 'yyyyMMdd_HHmmss').jpg"
         
         # Check if we already downloaded this wallpaper
         $existing = $History.downloads | Where-Object { $_.unsplashId -eq $wallpaper.id }
